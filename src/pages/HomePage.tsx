@@ -270,7 +270,7 @@ const HomePage: React.FC = () => {
               <CardMedia
                 component="img"
                 height="140"
-                image={`https://picsum.photos/400/300?random=${category.id}`}
+                image={category.imageUrl || `https://picsum.photos/400/300?random=${category.id}`}
                 alt={category.name}
               />
               <CardContent>

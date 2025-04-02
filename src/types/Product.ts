@@ -17,6 +17,7 @@ export interface Category {
   id: number;
   name: string;
   description: string;
+  imageUrl?: string;
   parentCategory?: Category;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
@@ -41,6 +42,7 @@ export interface LegacyProduct {
 export interface LegacyCategory {
   name: string;
   subCategories: string[];
+  imageUrl?: string;
 }
 
 export enum ProductStatus {

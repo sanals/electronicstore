@@ -58,6 +58,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
         id: index + 1,
         name: cat.name,
         description: `${cat.name} category`,
+        imageUrl: cat.imageUrl || `https://picsum.photos/400/300?random=${index + 10}`,
         status: 'ACTIVE' as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()

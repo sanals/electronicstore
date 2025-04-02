@@ -65,17 +65,51 @@ const CategoryPage: React.FC = () => {
         </Breadcrumbs>
       </Box>
 
-      <Typography 
-        variant="h4" 
-        component="h1" 
-        gutterBottom 
-        sx={{ 
-          mb: { xs: 2, md: 4 },
-          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
-        }}
-      >
-        {categoryName || 'Products'}
-      </Typography>
+      {/* Category Header with Image */}
+      <Box sx={{ mb: 4, position: 'relative' }}>
+        {categories.length > 0 && categoryId && (
+          <Box sx={{ 
+            position: 'relative',
+            height: { xs: '150px', md: '200px' },
+            borderRadius: 2,
+            overflow: 'hidden',
+            mb: 3
+          }}>
+            <Box
+              component="img"
+              src={
+                categories.find(c => c.id === parseInt(categoryId))?.imageUrl || 
+                `https://picsum.photos/800/300?random=${categoryId}`
+              }
+              alt={categoryName}
+              sx={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+            <Box sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+              p: 2
+            }}>
+              <Typography 
+                variant="h4" 
+                component="h1" 
+                color="white"
+                sx={{
+                  textShadow: '1px 1px 3px rgba(0,0,0,0.7)'
+                }}
+              >
+                {categoryName || 'Products'}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+      </Box>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
