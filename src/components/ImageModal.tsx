@@ -16,20 +16,24 @@ interface ImageModalProps {
   open: boolean;
   onClose: () => void;
   images: string[];
-  currentIndex: number;
-  onPrevious: () => void;
-  onNext: () => void;
+  initialIndex?: number;
+  title?: string;
 }
 
 const ImageModal: React.FC<ImageModalProps> = ({
   open,
   onClose,
   images,
-  currentIndex,
-  onPrevious,
-  onNext
+  initialIndex = 0,
+  title
 }) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Update currentIndex when initialIndex changes
+  React.useEffect(() => {
+    setCurrentIndex(initialIndex);
+  }, [initialIndex]);
 
   const handleImageLoad = () => {
     setIsLoading(false);
@@ -37,6 +41,14 @@ const ImageModal: React.FC<ImageModalProps> = ({
 
   const handleImageSwitch = () => {
     setIsLoading(true);
+  };
+
+  const handlePrevious = () => {
+    setCurrentIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
   };
 
   React.useEffect(() => {
@@ -128,7 +140,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
               px: 2
             }}>
               <IconButton
-                onClick={onPrevious}
+                onClick={handlePrevious}
                 sx={{
                   color: 'white',
                   bgcolor: 'rgba(0,0,0,0.5)',
@@ -143,7 +155,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
                 <ChevronLeft />
               </IconButton>
               <IconButton
-                onClick={onNext}
+                onClick={handleNext}
                 sx={{
                   color: 'white',
                   bgcolor: 'rgba(0,0,0,0.5)',

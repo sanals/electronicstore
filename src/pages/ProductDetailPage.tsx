@@ -12,13 +12,11 @@ import {
   IconButton,
   Link as MuiLink,
   Breadcrumbs,
-  Divider,
   CircularProgress
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useProducts } from '../context/ProductContext';
-import { formatPrice } from '../utils/helpers';
 import ImageModal from '../components/ImageModal';
 
 const ProductDetailPage: React.FC = () => {
@@ -40,7 +38,8 @@ const ProductDetailPage: React.FC = () => {
     handleImageSwitch();
   }, [currentImageIndex]);
 
-  const product = products.find(p => p.id === id);
+  // Find product by ID, converting string to number
+  const product = products.find(p => p.id === (id ? Number(id) : null));
 
   if (!product) {
     return (
@@ -66,6 +65,10 @@ const ProductDetailPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // Get category name and ID
+  const categoryName = product.category ? product.category.name : 'Uncategorized';
+  const categoryId = product.category ? product.category.id : null;
+
   return (
     <Container maxWidth="lg" sx={{ 
       px: { xs: 1, sm: 2, md: 3 },
@@ -81,13 +84,15 @@ const ProductDetailPage: React.FC = () => {
           <MuiLink component={Link} to="/" color="inherit">
             Home
           </MuiLink>
-          <MuiLink 
-            component={Link} 
-            to={`/category/${product.category}`} 
-            color="inherit"
-          >
-            {product.category}
-          </MuiLink>
+          {categoryId && (
+            <MuiLink 
+              component={Link} 
+              to={`/category/${categoryId}`} 
+              color="inherit"
+            >
+              {categoryName}
+            </MuiLink>
+          )}
           <Typography color="text.primary">{product.name}</Typography>
         </Breadcrumbs>
       </Box>
@@ -135,7 +140,6 @@ const ProductDetailPage: React.FC = () => {
                 alt={`${product.name} - view ${currentImageIndex + 1}`}
                 onLoad={handleImageLoad}
                 style={{ 
-                  // width: '100%',
                   height: '100%',
                   objectFit: 'contain',
                   objectPosition: 'center center',
@@ -198,87 +202,150 @@ const ProductDetailPage: React.FC = () => {
             ))}
           </Box>
         </Grid>
+
         <Grid item xs={12} md={6}>
           <Typography 
-            variant="h4" 
-            gutterBottom
+            variant="h4"
+            component="h1"
             sx={{ 
-              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-              mt: { xs: 2, md: 0 }
+              fontWeight: 'bold',
+              fontSize: { xs: '1.5rem', md: '2rem' },
+              mb: { xs: 1, md: 2 }
             }}
           >
             {product.name}
           </Typography>
-          <Typography variant="h5" color="primary" gutterBottom>
-            {formatPrice(product.price)}
-          </Typography>
-          <Typography variant="body1" paragraph>
-            {product.description}
-          </Typography>
+
           <Typography 
-            component={Link} 
-            to={`/category/${product.category}`}
+            variant="h5" 
             color="primary"
             sx={{ 
-              display: 'block', 
-              mb: 2,
-              textDecoration: 'none',
-              '&:hover': { textDecoration: 'underline' }
+              fontWeight: 'bold',
+              fontSize: { xs: '1.25rem', md: '1.5rem' },
+              mb: { xs: 2, md: 3 } 
             }}
           >
-            Browse more {product.category}
+            ${product.price.toFixed(2)}
           </Typography>
-          <Paper elevation={2} sx={{ p: { xs: 1, sm: 2 }, mt: { xs: 1, sm: 2 } }}>
-            <Grid container spacing={{ xs: 2, md: 3 }}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>Specifications</Typography>
-                <List>
-                  {Object.entries(product.specifications).map(([key, value]) => (
-                    <ListItem key={key}>
-                      <ListItemText primary={key} secondary={value} />
-                    </ListItem>
-                  ))}
-                </List>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Typography variant="h6" gutterBottom>Categories</Typography>
-                <List>
-                  <ListItem>
+
+          <Paper 
+            elevation={1}
+            sx={{ 
+              p: { xs: 1.5, md: 2.5 },
+              mb: { xs: 2, md: 3 }
+            }}
+          >
+            <Typography 
+              variant="body1"
+              sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }}
+            >
+              {product.description}
+            </Typography>
+            
+            {/* Display Category */}
+            {categoryId && (
+              <Typography 
+                variant="body2"
+                color="primary"
+                component={Link}
+                to={`/category/${categoryId}`}
+                sx={{ 
+                  display: 'block', 
+                  mt: 2, 
+                  textDecoration: 'none',
+                  '&:hover': { textDecoration: 'underline' } 
+                }}
+              >
+                Category: {categoryName}
+              </Typography>
+            )}
+          </Paper>
+
+          <Paper 
+            elevation={1}
+            sx={{ 
+              p: { xs: 1.5, md: 2.5 },
+              mb: { xs: 2, md: 3 }
+            }}
+          >
+            <Typography 
+              variant="h6"
+              sx={{ mb: 1, fontSize: { xs: '1rem', md: '1.25rem' } }}
+            >
+              Specifications
+            </Typography>
+            <List disablePadding>
+              {/* Stock Status */}
+              <ListItem disablePadding sx={{ py: 0.5 }}>
+                <ListItemText 
+                  primary="Stock Status" 
+                  secondary={
+                    <Typography 
+                      variant="body2" 
+                      color={product.stock > 0 ? "success.main" : "error.main"}
+                      sx={{ fontWeight: 'medium' }}
+                    >
+                      {product.stock > 0 
+                        ? `${product.stock} units available` 
+                        : 'Out of stock'}
+                    </Typography>
+                  } 
+                />
+              </ListItem>
+
+              {/* Category */}
+              <ListItem disablePadding sx={{ py: 0.5 }}>
+                <ListItemText 
+                  primary="Category" 
+                  secondary={
+                    <Typography 
+                      component={Link} 
+                      to={`/category/${categoryId}`}
+                      color="primary"
+                      variant="body2"
+                      sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                    >
+                      {categoryName}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+
+              {/* Map all the specification key-value pairs */}
+              {(() => {
+                // Parse specifications if they're a string
+                let specs = product.specifications;
+                if (typeof specs === 'string') {
+                  try {
+                    specs = JSON.parse(specs);
+                  } catch (e) {
+                    console.error('Failed to parse specifications:', e);
+                    specs = { "Error": "Invalid specification format" };
+                  }
+                }
+                
+                // Handle both object and string formats
+                return Object.entries(specs).map(([key, value]) => (
+                  <ListItem key={key} disablePadding sx={{ py: 0.5 }}>
                     <ListItemText 
-                      primary="Category"
-                      secondary={
-                        <Typography
-                          component={Link}
-                          to={`/category/${product.category}`}
-                          color="primary"
-                          sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                        >
-                          {product.category}
-                        </Typography>
-                      }
+                      primary={key} 
+                      secondary={String(value)}
                     />
                   </ListItem>
-                  <ListItem>
-                    <ListItemText 
-                      primary="Sub Category" 
-                      secondary={product.subCategory} 
-                    />
-                  </ListItem>
-                </List>
-              </Grid>
-            </Grid>
+                ));
+              })()}
+            </List>
           </Paper>
         </Grid>
       </Grid>
 
-      <ImageModal
+      {/* Image modal for fullscreen view */}
+      <ImageModal 
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         images={product.images}
-        currentIndex={currentImageIndex}
-        onPrevious={handlePrevImage}
-        onNext={handleNextImage}
+        initialIndex={currentImageIndex}
+        title={product.name}
       />
     </Container>
   );

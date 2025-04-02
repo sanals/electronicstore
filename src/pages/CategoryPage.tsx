@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   Container, 
@@ -6,21 +6,50 @@ import {
   Grid, 
   Box,
   Breadcrumbs,
-  Link as MuiLink
+  Link as MuiLink,
+  CircularProgress
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
 
 const CategoryPage: React.FC = () => {
-  const { category } = useParams<{ category: string }>();
-  const { filteredProducts, setFilter } = useProducts();
+  const { categoryId } = useParams<{ categoryId: string }>();
+  const { 
+    filteredProducts, 
+    setFilter, 
+    categories, 
+    loading, 
+    error,
+    fetchProducts 
+  } = useProducts();
+  const [categoryName, setCategoryName] = useState<string>('');
+  const [initialFilterApplied, setInitialFilterApplied] = useState(false);
 
-  React.useEffect(() => {
-    if (category) {
-      setFilter(category);
+  // Memoize the filtering function to prevent unnecessary re-renders
+  const applyFilter = useCallback(() => {
+    if (categoryId && !initialFilterApplied) {
+      const categoryIdNum = parseInt(categoryId, 10);
+      setFilter(categoryIdNum);
+      setInitialFilterApplied(true);
     }
-  }, [category, setFilter]);
+  }, [categoryId, setFilter, initialFilterApplied]);
+
+  // Apply filter once when component mounts or categoryId changes
+  useEffect(() => {
+    applyFilter();
+  }, [applyFilter]);
+
+  // Update category name when categories are loaded
+  useEffect(() => {
+    if (categoryId && categories.length > 0) {
+      const categoryIdNum = parseInt(categoryId, 10);
+      const category = categories.find(c => c.id === categoryIdNum);
+      if (category) {
+        setCategoryName(category.name);
+      }
+    }
+  }, [categoryId, categories]);
 
   return (
     <Container maxWidth="lg" sx={{ 
@@ -32,7 +61,7 @@ const CategoryPage: React.FC = () => {
           <MuiLink component={Link} to="/" color="inherit">
             Home
           </MuiLink>
-          <Typography color="text.primary">{category}</Typography>
+          <Typography color="text.primary">{categoryName || 'Category'}</Typography>
         </Breadcrumbs>
       </Box>
 
@@ -45,31 +74,52 @@ const CategoryPage: React.FC = () => {
           fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
         }}
       >
-        {category}
+        {categoryName || 'Products'}
       </Typography>
 
-      <Grid 
-        container 
-        spacing={{ xs: 1, sm: 2, md: 3 }}
-        justifyContent="center"
-      >
-        {filteredProducts.map((product) => (
-          <Grid 
-            item 
-            key={product.id} 
-            xs={12} 
-            sm={6} 
-            md={4}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Box sx={{ textAlign: 'center', py: 5 }}>
+          <Typography color="error" variant="h6">
+            {error}
+          </Typography>
+          <button 
+            onClick={() => {
+              setInitialFilterApplied(false);
+              applyFilter();
+            }} 
+            style={{ marginTop: '1rem' }}
           >
-            <ProductCard product={product} />
-          </Grid>
-        ))}
-      </Grid>
-
-      {filteredProducts.length === 0 && (
-        <Typography variant="body1" color="text.secondary" sx={{ mt: 4 }}>
-          No products found in this category.
-        </Typography>
+            Try Again
+          </button>
+        </Box>
+      ) : (
+        <Grid 
+          container 
+          spacing={{ xs: 1, sm: 2, md: 3 }}
+          justifyContent="center"
+        >
+          {filteredProducts.map((product) => (
+            <Grid 
+              item 
+              key={product.id} 
+              xs={12} 
+              sm={6} 
+              md={4}
+            >
+              <ProductCard product={product} />
+            </Grid>
+          ))}
+  
+          {filteredProducts.length === 0 && (
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 4 }}>
+              No products found in this category.
+            </Typography>
+          )}
+        </Grid>
       )}
     </Container>
   );

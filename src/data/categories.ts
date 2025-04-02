@@ -1,6 +1,11 @@
-import { Category } from '../types/Product';
+// Define a local category interface for the static data
+interface LocalCategory {
+  name: string;
+  subCategories: string[];
+}
 
-export const categories: Category[] = [
+// Local categories data
+export const categories: LocalCategory[] = [
   {
     name: 'Fans',
     subCategories: ['Ceiling Fans', 'Table Fans']

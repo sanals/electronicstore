@@ -1,97 +1,190 @@
-import React from 'react';
-import { Card, CardContent, CardMedia, Typography, Button, Box } from '@mui/material';
+import React, { useState } from 'react';
+import { 
+  Card, 
+  CardContent, 
+  CardMedia, 
+  Typography, 
+  Box, 
+  IconButton,
+  Chip
+} from '@mui/material';
+import { 
+  ShoppingCart, 
+  Favorite, 
+  FavoriteBorder 
+} from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { Product } from '../types/Product';
-import { formatPrice } from '../utils/helpers';
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+  
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation when clicking the heart icon
+    setIsFavorite(!isFavorite);
+  };
+  
+  // Use default image if no images are available
+  const imageUrl = product.images && product.images.length > 0 
+    ? product.images[0] 
+    : 'https://picsum.photos/400/300?random=1';
+  
+  // Format price with 2 decimal places
+  const formattedPrice = `$${product.price.toFixed(2)}`;
+  
+  // Stock status indicator
+  const lowStock = product.stock <= 5;
+  const inStock = product.stock > 0;
+
   return (
-    <Card sx={{ 
-      height: '100%', 
-      display: 'flex', 
-      flexDirection: 'column',
-      width: {
-        xs: '100%',
-        sm: '100%',
-        md: 345
-      }
-    }}>
-      <Box
-        component={Link}
-        to={`/product/${product.id}`}
-        sx={{ 
-          textDecoration: 'none',
-          '&:hover': { opacity: 0.9 },
-          // Fixed aspect ratio container
-          position: 'relative',
-          paddingTop: '75%', // 4:3 aspect ratio
-          overflow: 'hidden'
-        }}
-      >
-        <CardMedia
-          component="img"
-          image={product.imageUrl}
-          alt={product.name}
-          sx={{ 
-            cursor: 'pointer',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover'
-          }}
-        />
-      </Box>
-      <CardContent sx={{ 
-        flexGrow: 1, 
-        p: { xs: 1, sm: 2 },
+    <Card 
+      component={Link} 
+      to={`/product/${product.id}`}
+      sx={{ 
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between'
-      }}>
-        <Box>
-          <Typography 
-            gutterBottom 
-            variant="h6" 
-            component="div"
-            sx={{ 
-              fontSize: { xs: '1rem', sm: '1.25rem' },
-              height: { xs: 'auto', sm: '3rem' },
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              textOverflow: 'ellipsis'
-            }}
-          >
-            {product.name}
+        textDecoration: 'none',
+        color: 'inherit',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: 6
+        },
+        position: 'relative',
+        overflow: 'visible'
+      }}
+    >
+      {/* Status Chip */}
+      {!inStock ? (
+        <Chip 
+          label="Out of Stock" 
+          color="error" 
+          size="small" 
+          sx={{ 
+            position: 'absolute', 
+            top: 10, 
+            left: 10, 
+            zIndex: 1 
+          }} 
+        />
+      ) : lowStock ? (
+        <Chip 
+          label="Low Stock" 
+          color="warning" 
+          size="small" 
+          sx={{ 
+            position: 'absolute', 
+            top: 10, 
+            left: 10, 
+            zIndex: 1 
+          }} 
+        />
+      ) : null}
+      
+      {/* Favorite Button */}
+      <IconButton 
+        size="small" 
+        onClick={toggleFavorite}
+        sx={{ 
+          position: 'absolute', 
+          top: 10, 
+          right: 10, 
+          zIndex: 1,
+          bgcolor: 'rgba(255,255,255,0.8)', 
+          '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+        }}
+      >
+        {isFavorite ? <Favorite color="error" /> : <FavoriteBorder />}
+      </IconButton>
+      
+      <CardMedia
+        component="img"
+        height="200"
+        image={imageUrl}
+        alt={product.name}
+        sx={{ objectFit: 'contain', p: 2, bgcolor: '#f7f7f7' }}
+      />
+      
+      <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+        <Typography 
+          gutterBottom 
+          variant="h6" 
+          component="h2" 
+          sx={{ 
+            fontWeight: 'medium',
+            fontSize: '1.1rem',
+            height: '2.4em',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
+          }}
+        >
+          {product.name}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
+            {formattedPrice}
           </Typography>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton 
+              size="small" 
+              color="primary"
+              sx={{ 
+                bgcolor: 'primary.main', 
+                color: 'white',
+                '&:hover': { bgcolor: 'primary.dark' }
+              }}
+            >
+              <ShoppingCart fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+        
+        {product.category && (
           <Typography 
             variant="body2" 
             color="text.secondary"
-            sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+            sx={{ mb: 1 }}
           >
-            {formatPrice(product.price)}
+            Category: {product.category.name}
+          </Typography>
+        )}
+        
+        <Typography 
+          variant="body2" 
+          color="text.secondary" 
+          sx={{ 
+            mb: 1,
+            height: '2.5em',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
+          }}
+        >
+          {product.description}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', mt: 'auto' }}>
+          <Typography 
+            variant="body2" 
+            color={inStock ? "success.main" : "error.main"}
+            sx={{ fontWeight: 'medium' }}
+          >
+            {inStock ? `${product.stock} in stock` : 'Out of stock'}
           </Typography>
         </Box>
       </CardContent>
-      <Button
-        component={Link}
-        to={`/product/${product.id}`}
-        variant="contained"
-        color="primary"
-        sx={{ 
-          m: { xs: 1, sm: 2 },
-          fontSize: { xs: '0.875rem', sm: '1rem' }
-        }}
-      >
-        View Details
-      </Button>
     </Card>
   );
 };

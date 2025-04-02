@@ -1,6 +1,6 @@
-import { Product } from '../types/Product';
+import { LegacyProduct } from '../types/Product';
 
-export const products: Product[] = [
+export const products: LegacyProduct[] = [
   {
     id: '1',
     name: 'Premium Ceiling Fan',
@@ -8,19 +8,20 @@ export const products: Product[] = [
     subCategory: 'Ceiling Fans',
     price: 129.99,
     description: 'High-quality ceiling fan with 3-speed control and remote operation',
-    imageUrl: 'https://picsum.photos/1280/720?random=1',
+    imageUrl: 'https://picsum.photos/800/600?random=1',
     images: [
-      'https://picsum.photos/1920/1080?random=1',
-      'https://picsum.photos/1280/720?random=1a',
-      'https://picsum.photos/1440/900?random=1b',
-      'https://picsum.photos/1600/900?random=1c'
+      'https://picsum.photos/800/600?random=1',
+      'https://picsum.photos/800/600?random=2',
+      'https://picsum.photos/800/600?random=3'
     ],
     specifications: {
-      'Speed Settings': '3',
+      'Power': '65W',
       'Blade Span': '52 inches',
-      'Motor Type': 'DC Motor'
+      'Air Flow': '5200 CFM',
+      'Material': 'Steel/Wood',
+      'Warranty': '2 years'
     },
-    popularity: 4.5
+    popularity: 4.7
   },
   {
     id: '2',
