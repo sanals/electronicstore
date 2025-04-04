@@ -8,7 +8,9 @@ import {
   Box, 
   CardMedia,
   IconButton,
-  Paper
+  Paper,
+  CircularProgress,
+  Pagination
 } from '@mui/material';
 import { 
   ChevronLeft, 
@@ -17,10 +19,10 @@ import {
   LocationOn
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-import { categories } from '../data/categories';
 import { useProducts } from '../context/ProductContext';
 import Button from '../components/Button';
 import { locations } from '../data/locations';
+import ProductCard from '../components/ProductCard';
 
 // Category images mapping
 const categoryImages: Record<string, string> = {
@@ -33,14 +35,43 @@ const categoryImages: Record<string, string> = {
 const AUTOPLAY_DELAY = 5000; // 5 seconds
 
 const HomePage: React.FC = () => {
-  const { products } = useProducts();
+  const { 
+    products, 
+    categories,
+    loading, 
+    error,
+    totalPages,
+    currentPage, 
+    setPage,
+    fetchProducts
+  } = useProducts();
+  
   const featuredProducts = products.slice(0, 5); // Get first 5 products as featured
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
 
+  // Search functionality
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Function to handle search
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      fetchProducts(searchQuery);
+    }
+  };
+
+  // Handle search input keypress
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   // Auto-slide functionality
   useEffect(() => {
+    if (featuredProducts.length === 0) return;
+    
     const timer = setInterval(() => {
       setCurrentSlide((prev) => 
         prev === featuredProducts.length - 1 ? 0 : prev + 1
@@ -62,6 +93,10 @@ const HomePage: React.FC = () => {
     );
   };
 
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value - 1); // API pages are 0-indexed
+  };
+
   const states = Object.keys(locations);
   const cities = selectedState ? Object.keys(locations[selectedState as keyof typeof locations]) : [];
   const localities = selectedState && selectedCity ? 
@@ -73,119 +108,180 @@ const HomePage: React.FC = () => {
       mx: 'auto'
     }}>
       {/* Featured Products Slider */}
-      <Box sx={{ 
-        position: 'relative',
-        mb: 6,
-        mt: 2,
-        height: { xs: '200px', sm: '300px', md: '400px' }
-      }}>
-        <Paper 
-          elevation={3}
-          sx={{ 
-            position: 'relative',
-            height: '100%',
-            overflow: 'hidden',
-            borderRadius: 2
-          }}
-        >
-          {featuredProducts.map((product, index) => (
-            <Box
-              key={product.id}
-              component={Link}
-              to={`/product/${product.id}`}
+      {loading && featuredProducts.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Box sx={{ textAlign: 'center', py: 5 }}>
+          <Typography color="error" variant="h6">
+            {error}
+          </Typography>
+          <Button onClick={() => fetchProducts()} sx={{ mt: 2 }}>
+            Try Again
+          </Button>
+        </Box>
+      ) : featuredProducts.length > 0 ? (
+        <Box sx={{ 
+          position: 'relative',
+          mb: 6,
+          mt: 2,
+          height: { xs: '200px', sm: '300px', md: '400px' }
+        }}>
+          <Paper 
+            elevation={3}
+            sx={{ 
+              position: 'relative',
+              height: '100%',
+              overflow: 'hidden',
+              borderRadius: 2
+            }}
+          >
+            {featuredProducts.map((product, index) => (
+              <Box
+                key={product.id}
+                component={Link}
+                to={`/product/${product.id}`}
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: currentSlide === index ? 1 : 0,
+                  transition: 'opacity 0.5s ease-in-out',
+                  textDecoration: 'none',
+                  color: 'inherit'
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  image={product.images.length > 0 ? product.images[0] : 'https://picsum.photos/800/600?random=1'}
+                  alt={product.name}
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
+                <Box sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                  p: 2,
+                  color: 'white'
+                }}>
+                  <Typography variant="h5" gutterBottom>
+                    {product.name}
+                  </Typography>
+                  <Typography variant="body1">
+                    ${product.price.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+            
+            <IconButton
+              onClick={handlePrevSlide}
               sx={{
                 position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
+                left: 16,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                bgcolor: 'rgba(255,255,255,0.8)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+              }}
+            >
+              <ChevronLeft />
+            </IconButton>
+            
+            <IconButton
+              onClick={handleNextSlide}
+              sx={{
+                position: 'absolute',
+                right: 16,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                bgcolor: 'rgba(255,255,255,0.8)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+              }}
+            >
+              <ChevronRight />
+            </IconButton>
+
+            {/* Dot indicators */}
+            <Box sx={{
+              position: 'absolute',
+              bottom: 16,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 1
+            }}>
+              {featuredProducts.map((_, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: currentSlide === index ? 'white' : 'rgba(255,255,255,0.5)',
+                    transition: 'background-color 0.3s'
+                  }}
+                />
+              ))}
+            </Box>
+          </Paper>
+        </Box>
+      ) : null}
+
+      {/* Categories Section */}
+      <Typography 
+        variant="h4" 
+        component="h2" 
+        sx={{ 
+          my: 4, 
+          fontWeight: 'bold',
+          textAlign: 'center'
+        }}
+      >
+        Shop by Category
+      </Typography>
+
+      <Grid container spacing={3} sx={{ mb: 6 }}>
+        {categories.filter(cat => cat.status === 'ACTIVE').map((category) => (
+          <Grid item xs={6} sm={4} md={3} key={category.id}>
+            <Card 
+              component={Link} 
+              to={`/category/${category.id}`}
+              sx={{ 
                 height: '100%',
-                opacity: currentSlide === index ? 1 : 0,
-                transition: 'opacity 0.5s ease-in-out',
+                display: 'flex',
+                flexDirection: 'column',
                 textDecoration: 'none',
-                color: 'inherit'
+                transition: 'transform 0.3s',
+                '&:hover': {
+                  transform: 'scale(1.03)'
+                },
               }}
             >
               <CardMedia
                 component="img"
-                image={product.images[0]}
-                alt={product.name}
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
+                height="140"
+                image={category.imageUrl || `https://picsum.photos/400/300?random=${category.id}`}
+                alt={category.name}
               />
-              <Box sx={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
-                p: 2,
-                color: 'white'
-              }}>
-                <Typography variant="h5" gutterBottom>
-                  {product.name}
+              <CardContent>
+                <Typography gutterBottom variant="h6" component="div" sx={{ textAlign: 'center' }}>
+                  {category.name}
                 </Typography>
-                <Typography variant="body1">
-                  {product.description}
-                </Typography>
-              </Box>
-            </Box>
-          ))}
-          
-          <IconButton
-            onClick={handlePrevSlide}
-            sx={{
-              position: 'absolute',
-              left: 16,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              bgcolor: 'rgba(255,255,255,0.8)',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-            }}
-          >
-            <ChevronLeft />
-          </IconButton>
-          
-          <IconButton
-            onClick={handleNextSlide}
-            sx={{
-              position: 'absolute',
-              right: 16,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              bgcolor: 'rgba(255,255,255,0.8)',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-            }}
-          >
-            <ChevronRight />
-          </IconButton>
-
-          {/* Dot indicators */}
-          <Box sx={{
-            position: 'absolute',
-            bottom: 16,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: 1
-          }}>
-            {featuredProducts.map((_, index) => (
-              <Box
-                key={index}
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  bgcolor: currentSlide === index ? 'white' : 'rgba(255,255,255,0.5)',
-                  transition: 'background-color 0.3s'
-                }}
-              />
-            ))}
-          </Box>
-        </Paper>
-      </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
       {/* Store Message Section */}
       <Box sx={{ 
@@ -199,149 +295,76 @@ const HomePage: React.FC = () => {
           gutterBottom
           sx={{ 
             fontWeight: 'bold',
-            mb: 3,
-            fontSize: { xs: '1.8rem', sm: '2.4rem', md: '3rem' }
+            fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' }
           }}
         >
-          WE LIVE IN A WORLD OF
-          <Box component="span" display="block">
-            ENDLESS POSSIBILITIES
-          </Box>
+          Your Trusted Source for Quality Electronics
         </Typography>
         <Typography 
           variant="body1" 
-          paragraph
           sx={{ 
             mb: 3,
-            fontSize: { xs: '1rem', sm: '1.1rem' },
-            color: 'text.secondary'
+            fontSize: { xs: '1rem', md: '1.1rem' },
+            maxWidth: '800px',
+            mx: 'auto'
           }}
         >
-          Every creation has its own ripple effect. At Elegant Electrics, 
-          every idea arises to establish a sustainable business environment and make 
-          a positive difference to every life it touches.
-        </Typography>
-        <Typography 
-          variant="body1"
-          sx={{ 
-            fontSize: { xs: '1rem', sm: '1.1rem' },
-            color: 'text.secondary'
-          }}
-        >
-          Relentlessly spearing ahead with passion and innovation, all our endeavours 
-          reflect the enduring bond of trust that we share with our consumers time and again, 
-          the pursuit of excellence drives us to work towards creating a smarter world and 
-          POWER MORE POSSIBILITIES.
+          With over 10,000 products and 15 years of experience, we offer the best selection of electronic components and devices for professionals and hobbyists alike.
         </Typography>
       </Box>
-
-      {/* Categories Grid - remove the Categories header */}
-      <Grid 
-        container 
-        spacing={{ xs: 1, sm: 2, md: 3 }}
-        justifyContent="center"
+        
+      {/* Latest Products Section */}
+      <Typography 
+        variant="h4" 
+        component="h2" 
+        sx={{ 
+          mb: 4, 
+          mt: 6,
+          fontWeight: 'bold',
+          textAlign: 'center'
+        }}
       >
-        {categories.map((category) => (
-          <Grid item key={category.name} xs={12} sm={6} md={4}>
-            <Card 
-              component={Link}
-              to={`/category/${category.name}`}
-              sx={{ 
-                height: '100%',
-                textDecoration: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'transform 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)'
-                }
-              }}
-            >
-              <Box sx={{ 
-                position: 'relative',
-                paddingTop: '60%', // 5:3 aspect ratio
-                overflow: 'hidden'
-              }}>
-                <CardMedia
-                  component="img"
-                  image={categoryImages[category.name]}
-                  alt={category.name}
-                  sx={{ 
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                />
-              </Box>
-              <CardContent sx={{ p: 3 }}>
-                <Typography 
-                  variant="h5" 
-                  component="h2" 
-                  gutterBottom
-                  color="primary"
-                >
-                  {category.name}
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  {category.subCategories.map((subCategory) => (
-                    <Typography 
-                      key={subCategory} 
-                      variant="body2" 
-                      color="text.secondary"
-                      sx={{ mb: 0.5 }}
-                    >
-                      • {subCategory}
-                    </Typography>
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
+        Latest Products
+      </Typography>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Box sx={{ textAlign: 'center', py: 5 }}>
+          <Typography color="error" variant="h6">
+            {error}
+          </Typography>
+          <Button onClick={() => fetchProducts()} sx={{ mt: 2 }}>
+            Try Again
+          </Button>
+        </Box>
+      ) : (
+        <>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {products.map((product) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
+                <ProductCard product={product} />
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
+        
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+              <Pagination 
+                count={totalPages} 
+                page={currentPage + 1} 
+                onChange={handlePageChange} 
+                color="primary" 
+              />
+            </Box>
+          )}
+        </>
+      )}
 
-      {/* Download Catalog Section */}
-      <Box sx={{ 
-        textAlign: 'center', 
-        mt: { xs: 6, md: 8 },
-        mb: { xs: 4, md: 6 },
-        py: 6,
-        bgcolor: 'grey.100',
-        borderRadius: 2
-      }}>
-        <Typography 
-          variant="h4" 
-          gutterBottom
-          sx={{ 
-            fontWeight: 'bold',
-            mb: 1
-          }}
-        >
-          DOWNLOAD PRODUCTS CATALOGUE
-        </Typography>
-        <Typography 
-          variant="subtitle1" 
-          sx={{ 
-            color: 'primary.main',
-            mb: 3
-          }}
-        >
-          Check our brochures for more information
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Download />}
-          size="large"
-          onClick={() => window.open('/catalog.pdf', '_blank')}
-        >
-          EXPLORE MORE
-        </Button>
-      </Box>
-
-      {/* Locate Office Section */}
+      {/* Location Section */}
       <Box sx={{ 
         textAlign: 'center', 
         my: { xs: 4, md: 6 },
